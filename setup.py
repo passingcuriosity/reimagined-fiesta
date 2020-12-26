@@ -8,7 +8,6 @@ DIR = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(DIR, "README.md")) as f:
     long_description = f.read()
 
-
 setup(
     name="py-latency-logger",
     version="0.0.1",
@@ -18,7 +17,7 @@ setup(
     url="https://github.com/thsutton/py-latency-logger",
     license="GPL",
     packages=["latency_logger"],
-    package_dir = {'': 'src'},
+    package_dir={'': 'src'},
     entry_points={
         "console_scripts": [
             "latency-recorder=latency_logger:main",
@@ -26,6 +25,7 @@ setup(
     },
     install_requires=[
         "confluent-kafka",
+        "pycurl",
     ],
     extras_require={
         "dev": [

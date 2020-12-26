@@ -16,8 +16,20 @@ package of https://pypi.org/project/confluent-kafka/. I used Homebrew's
 Architecture
 ------------
 
-A configuration file is read at startup which describes the URLs to be
-monitored and the frequency with which they should each be checked.
+The overall architecture attempts to 
 
-Then a multiprocessing queue is initialised and a number of workers are
-forked to actually perform the checks.
+The system is composed of three main components:
+
+1. The main process handles the user interface.
+
+2. The scheduler process dispatches tasks according to the schedule.
+
+3. The worker processes execute the tasks.
+
+There are two ways processes communicate:
+
+- A shared variable is used by the main process to instruct children to
+  shutdown.
+
+- A shared queue of tasks is written by the scheduler and read by the
+  workers.

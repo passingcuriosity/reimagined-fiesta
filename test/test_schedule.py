@@ -1,18 +1,6 @@
-from itertools import groupby
-from functools import reduce
-from math import gcd
+"""Unit tests for the scheduling code."""
 
-from latency_logger import compute_schedule
-
-
-def test_singleton_empty():
-    """Test that an empty config generates an empty programme."""
-
-    config = []
-
-    programme = compute_schedule(config)
-
-    assert programme == []
+from latency_logger.scheduler import compute_schedule
 
 
 def test_singleton_programme():
@@ -50,5 +38,3 @@ def test_programme():
         (2, ['http://2.s.com/']),
         (2, ['http://2.s.com/', 'http://4.s.com/', 'http://5.s.com/']),
     ]
-
-
