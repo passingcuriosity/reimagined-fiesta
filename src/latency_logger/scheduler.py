@@ -14,7 +14,7 @@ from typing import List, Tuple, Optional
 @dataclass(eq=True, frozen=True, order=True)
 class Job:
     """A job to be executed on a recurring schedule."""
-    seconds: int
+    delay: timedelta
     command: str
 
 
@@ -24,6 +24,9 @@ class Scheduler:
     Jobs are returned in order of scheduled execution time according to the
     defined delay and with respect to the time the scheduler was started. No
     special efforts are taken to provide high accuracy.
+
+    The approach here is similar to that in https://pypi.org/project/schedule/
+    but without complicated builder interface.
     """
 
     # When True, the scheduler sleep during iteration.
@@ -65,7 +68,7 @@ class Scheduler:
             self.log.info(f"Starting at {now} with {len(self.jobs)} jobs.")
         self.started = now
         self.schedule = sorted([
-            (now + timedelta(seconds=j.seconds), j) for j in sorted(self.jobs)
+            (now + j.delay, j) for j in sorted(self.jobs)
         ])
         return self
 
@@ -75,7 +78,7 @@ class Scheduler:
             raise StopIteration
         deadline, job = self.schedule[0]
         # TODO: Replace the sorted-array with a better data structure.
-        self.schedule[0] = (deadline + timedelta(seconds=job.seconds), job)
+        self.schedule[0] = (deadline + job.delay, job)
         self.schedule.sort()
         sleep = (deadline - datetime.now()).total_seconds()
         if self.sleep and sleep > 0:
@@ -93,7 +96,7 @@ class Scheduler:
 
 def scheduler(
     name: str,
-    config: List[Tuple[int, str]],
+    config: List[Tuple[timedelta, str]],
     shutdown: multiprocessing.Value,
     request_queue: multiprocessing.Queue,
     verbose: bool
@@ -111,7 +114,7 @@ def scheduler(
 
     scheduler = Scheduler(sleep=True, log=log)
     for delay, url in config:
-        scheduler.add_job(Job(seconds=delay, command=url))
+        scheduler.add_job(Job(delay=delay, command=url))
 
     for ts, job in scheduler:
         if shutdown.value:

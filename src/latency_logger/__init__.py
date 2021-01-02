@@ -1,6 +1,7 @@
 """Entrypoint for programme."""
 
 import argparse
+from datetime import timedelta
 import logging
 import multiprocessing
 import signal
@@ -47,7 +48,7 @@ def parse_config_stream(file) -> Optional[List[Tuple[int, List[str]]]]:
             line = line.strip()
             try:
                 seconds, url = line.split(",", 2)
-                config.append((int(seconds.strip()), url.strip()))
+                config.append((timedelta(seconds=int(seconds.strip())), url.strip()))
             except ValueError as exc:
                 new_exc = ValueError(
                     f"Expected '<num>,<url>' on line {ln}: '{line}'"
