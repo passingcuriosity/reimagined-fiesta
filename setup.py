@@ -1,6 +1,7 @@
 """Setup script for py-latency-logger."""
 
 import os.path
+
 from setuptools import setup
 
 
@@ -34,6 +35,7 @@ setup(
             "hypothesis",
             "pytest",
             "flake8-docstrings",
+            "flake8-isort",
             "pytest-mock",
         ],
     },

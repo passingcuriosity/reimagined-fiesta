@@ -3,10 +3,9 @@
 from datetime import datetime, timedelta
 from itertools import islice, takewhile
 
-from hypothesis import given
 import hypothesis.strategies as st
 import pytest
-
+from hypothesis import given
 
 from latency_logger.scheduler import Job, Scheduler
 
@@ -29,7 +28,6 @@ def test_empty_programme():
 
 def test_singleton_programme():
     """Test that a single record config a valid programme."""
-
     config = [(timedelta(seconds=10), "https://example.com/")]
 
     s = Scheduler(sleep=False)
@@ -101,7 +99,6 @@ def test_canned_programme():
 ))
 def test_programme_invariants(times):
     """Test schedule invariants against random configurations."""
-
     # We'll validate a duration long enough to see every task twice.
     d = 2 * max(times)
     config = [
