@@ -1,15 +1,14 @@
 """Entrypoint for programme."""
 
 import argparse
-from datetime import timedelta
 import logging
 import multiprocessing
 import signal
 import sys
+from datetime import timedelta
 from typing import List, Optional, Tuple
 
-from latency_logger import scheduler
-from latency_logger import worker
+from latency_logger import scheduler, worker
 
 
 def arg_parser() -> argparse.ArgumentParser:

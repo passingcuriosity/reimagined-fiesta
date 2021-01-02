@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 import logging
 import multiprocessing
 import signal
 import time
-from typing import List, Tuple, Optional
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import List, Optional, Tuple
 
 
 @dataclass(eq=True, frozen=True, order=True)
 class Job:
     """A job to be executed on a recurring schedule."""
+
     delay: timedelta
     command: str
 
@@ -44,6 +45,7 @@ class ScheduleIterator:
             self.log.info(f"Starting at {started} with {len(jobs)} jobs.")
 
     def __iter__(self):
+        """Return self as iterator."""
         return self
 
     def __next__(self):
@@ -72,6 +74,7 @@ class Scheduler:
     defined delay and with respect to the time the scheduler was started. No
     special efforts are taken to provide high accuracy.
     """
+
     sleep: bool
 
     log: Optional[logging.Logger]

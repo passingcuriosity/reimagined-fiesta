@@ -1,4 +1,4 @@
-"""Module execution entrypoint"""
+"""Module execution entrypoint."""
 
 from . import main
 

@@ -21,12 +21,15 @@ CONFIG = worker.Config(
 
 class MockTerminationVariable:
     """Mock variable to signal termination after |n| inspections."""
+
     def __init__(self, terminate_on: int):
+        """Initalise mock variable to return false after n reads."""
         self.count = terminate_on
         self.reads = 0
 
     @property
     def value(self):
+        """Read the value of the variable."""
         self.reads += 1
         return int(not max(0, self.count - self.reads))
 
@@ -111,7 +114,6 @@ def test_mock_termination_variable():
 
 def test_worker(mocker, mock_curl, mock_producer, mock_datetime):
     """Test that the worker performs requests."""
-
     number_to_process = 3
     urls = [f"https://localhost/{n}" for n in range(0, number_to_process + 2)]
 

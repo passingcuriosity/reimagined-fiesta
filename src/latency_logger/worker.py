@@ -1,23 +1,24 @@
 """Code to execute tasks."""
 
 import dataclasses
-from dataclasses import dataclass
-from datetime import datetime
 import logging
 import multiprocessing
 import queue
 import signal
+from dataclasses import dataclass
+from datetime import datetime
 
+import pycurl
 from confluent_kafka import SerializingProducer
-from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
-import pycurl
+from confluent_kafka.serialization import StringSerializer
 
 
 @dataclass(frozen=True)
 class Report:
     """Report for a request."""
+
     url: str
     code: int
     timestamp: float
@@ -56,6 +57,7 @@ class Report:
 @dataclass(frozen=True)
 class Config:
     """Configuration for worker processes."""
+
     topic: str
     schema_registry: str
     bootstrap_servers: str
@@ -71,7 +73,7 @@ def main(
     request_queue: multiprocessing.Queue,
     config: Config
 ) -> None:
-    """Main loop for worker.
+    """Execute tasks forever.
 
     This method is the entrypoint for the worker which executes the monitoring
     tasks. It is executed in a dedicate child process.
