@@ -37,6 +37,7 @@ Development
 ```
 $ [ -f venv/bin/activate ] || python3 -m venv venv
 $ . venv/bin/activate
+(venv) $ export PYCURL_SSL_LIBRARY=openssl
 (venv) $ pip install -e .[dev]
 (venv) $ flake8 *.py src/ test/
 (venv) $ pytest -vv

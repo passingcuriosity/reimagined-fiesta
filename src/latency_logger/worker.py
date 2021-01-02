@@ -5,7 +5,7 @@ import multiprocessing
 import queue
 import signal
 
-from .util import ignore_signal
+import pycurl
 
 
 def worker(
@@ -27,7 +27,7 @@ def worker(
     # SIGINT will be delivered to the whole process group. We'll need to ignore
     # it in the worker processes to give them the opportunity to finish any
     # pending work.
-    signal.signal(signal.SIGINT, ignore_signal(log))
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     while not shutdown.value:
         try:
