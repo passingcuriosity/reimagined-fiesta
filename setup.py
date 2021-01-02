@@ -33,6 +33,7 @@ setup(
         "dev": [
             "hypothesis",
             "pytest",
+            "pytest-mock",
         ],
     },
 )

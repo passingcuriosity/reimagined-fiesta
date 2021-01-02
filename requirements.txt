@@ -1,2 +1,0 @@
-# Setting this to make sure that GitHub Actions can download a wheel.
-pycurl==7.43.0.5
