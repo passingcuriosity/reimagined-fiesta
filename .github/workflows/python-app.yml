@@ -1,0 +1,36 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: "Python application"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libcurl4-openssl-dev
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .[dev]
+    - name: flake8
+      uses: liskin/gh-problem-matcher-wrap@v1
+      with:
+        linters: flake8
+        run: flake8 setup.py test/ src/
+    - name: Test with pytest
+      run: |
+        pytest
