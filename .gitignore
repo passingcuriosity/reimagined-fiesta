@@ -1,6 +1,11 @@
+.terraform/
 *.cert
 *.key
+*.lock.hcl
 *.pem
-/*.sh
+*.tfstate
+*.tfstate.backup
+*.tfvars
 /.hypothesis/
+/*.sh
 /venv/
