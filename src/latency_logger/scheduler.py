@@ -34,6 +34,8 @@ class ScheduleIterator:
         log: Optional[logging.Logger] = None,
     ):
         """Build a schedule for the datetime and jobs."""
+        if len(jobs) == 0:
+            raise ValueError("Cannot run with empty schedule.")
         self.sleep = sleep
         self.log = log
         self.started = started

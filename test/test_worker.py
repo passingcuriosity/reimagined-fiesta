@@ -5,7 +5,6 @@ from queue import Queue
 
 import pycurl
 import pytest
-from pytest_mock import MockerFixture
 
 from latency_logger import worker
 
@@ -30,15 +29,6 @@ class MockTerminationVariable:
     def value(self):
         self.reads += 1
         return int(not max(0, self.count - self.reads))
-
-
-def test_mock_termination_variable():
-    """Test that the mock termination variable works"""
-    terminate = MockTerminationVariable(terminate_on=3)
-    assert terminate.value == 0
-    assert terminate.value == 0
-    assert terminate.value == 1
-    assert terminate.value == 1
 
 
 @pytest.fixture
@@ -68,7 +58,8 @@ def mock_curl(mocker):
             return n
         if info == pycurl.TOTAL_TIME:
             return n
-        return "wot"
+        return None
+
     curl.getinfo = fake_info
 
     return curl
@@ -91,7 +82,7 @@ def mock_producer(mocker):
 
 @pytest.fixture
 def mock_datetime(mocker):
-    """Mock datetime.datetime in worker."""
+    """Mock datetime.datetime.now in worker."""
     start_time = datetime.now()
     fake_time = start_time
 
@@ -109,7 +100,16 @@ def mock_datetime(mocker):
     return mock_inst
 
 
-def test_worker(mocker: MockerFixture, mock_curl, mock_producer, mock_datetime):
+def test_mock_termination_variable():
+    """Test that the mock termination variable works."""
+    terminate = MockTerminationVariable(terminate_on=3)
+    assert terminate.value == 0
+    assert terminate.value == 0
+    assert terminate.value == 1
+    assert terminate.value == 1
+
+
+def test_worker(mocker, mock_curl, mock_producer, mock_datetime):
     """Test that the worker performs requests."""
 
     number_to_process = 3
@@ -119,7 +119,6 @@ def test_worker(mocker: MockerFixture, mock_curl, mock_producer, mock_datetime):
     for u in urls:
         queue.put(u)
     term = MockTerminationVariable(terminate_on=number_to_process + 1)
-
     worker.main("test-worker", term, queue, CONFIG)
 
     assert term.reads == number_to_process + 1
@@ -157,3 +156,13 @@ def test_worker(mocker: MockerFixture, mock_curl, mock_producer, mock_datetime):
         (c.kwargs['key'], c.kwargs['value']) for c in mock_producer.produce.call_args_list
     ]
     assert actual_produced_records == [expected_report(n) for n in range(0, number_to_process)]
+
+
+def test_worker_handles_failing_requests():
+    """Test that the worker correctly handles failing URLs."""
+    pytest.skip("Not implemented")
+
+
+def test_worker_recovers_from_kafka_failures():
+    """Test that the worker recovers from non-fatal Kafka errors."""
+    pytest.skip("Not implemented")
