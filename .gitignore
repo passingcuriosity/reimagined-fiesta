@@ -1,2 +1,6 @@
-/venv/
+*.cert
+*.key
+*.pem
+/*.sh
 /.hypothesis/
+/venv/
