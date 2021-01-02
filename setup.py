@@ -20,7 +20,7 @@ setup(
     package_dir={'': 'src'},
     entry_points={
         "console_scripts": [
-            "latency-recorder=latency_logger:main",
+            "latency-logger=latency_logger:main",
         ],
     },
     install_requires=[
@@ -29,6 +29,7 @@ setup(
     ],
     extras_require={
         "dev": [
+            "hypothesis",
             "pytest",
         ],
     },

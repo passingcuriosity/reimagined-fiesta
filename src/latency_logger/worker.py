@@ -11,13 +11,16 @@ from .util import ignore_signal
 def worker(
     name: str,
     shutdown: multiprocessing.Value,
-    request_queue: multiprocessing.Queue
+    request_queue: multiprocessing.Queue,
+    verbose: bool
 ) -> None:
     """Main loop for worker.
 
     This method is the entrypoint for the worker which executes the monitoring
     tasks. It is executed in a dedicate child process.
     """
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
     log = logging.getLogger(name)
     log.info(f"Starting process {name}.")
 

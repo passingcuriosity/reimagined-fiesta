@@ -1,55 +1,108 @@
 """Code to compute a schedule and dispatch tasks."""
 
-import functools
-import itertools
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 import logging
-from math import gcd
 import multiprocessing
 import signal
 import time
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from .util import ignore_signal
 
 
-def compute_schedule(
-    config: List[Tuple[int, str]]
-) -> List[Tuple[int, List[str]]]:
-    """Compute the programme of requests.
+@dataclass(eq=True, frozen=True, order=True)
+class Job:
+    """A job to be executed on a recurring schedule."""
+    seconds: int
+    command: str
 
-    This method returns a list of tuples of a delay (in seconds) and a list of
-    URLs to dispatch. The returned list can be cycled to obtain the appropriate
-    behaviour.
+
+class Scheduler:
+    """Schedule a collection of recurring jobs.
+
+    Jobs are returned in order of scheduled execution time according to the
+    defined delay and with respect to the time the scheduler was started. No
+    special efforts are taken to provide high accuracy.
     """
-    # Find the duration of the programme. This is the LCM of the durations of
-    # each step.
-    durations = [s for s, _ in config]
-    dur = functools.reduce(lambda x, y: x * y // gcd(x, y), durations)
 
-    # Expand the configuration into a schedule for the full duration. All times
-    # $t_{n}$ are relative to $t_{0}$.
-    schedule = itertools.groupby(sorted([
-        (n * s, url) for s, url in config for n in range(1, dur // s + 1)
-    ]), lambda x: x[0])
+    # When True, the scheduler sleep during iteration.
+    sleep: bool
 
-    # Calculate a programme from the full schedule. All times $t_{n}$ are
-    # relative to $t_{n-1}$.
-    t = 0
-    programme = []
-    for s, urls in schedule:
-        programme.append((s - t, [u for _, u in urls]))
-        t = s
+    log: Optional[logging.Logger]
 
-    return programme
+    # List of jobs being scheduled.
+    jobs: List[Job]
+
+    # Timestamp the schedule was started.
+    started: Optional[datetime]
+
+    # Queue of tasks, sorted by datetime of next scheduled execution.
+    schedule: List[Tuple[datetime, Job]]
+
+    def __init__(
+        self: Scheduler,
+        sleep: bool = True,
+        started: Optional[datetime] = None,
+        log: Optional[logging.Logger] = None,
+    ):
+        """Initialise an empty, stopped scheduler."""
+        self.jobs = []
+        self.schedule = []
+        self.sleep = sleep
+        self.started = started
+        self.log = log
+
+    def __iter__(self):
+        """Use the scheduler as an iterator over jobs."""
+        # TODO: A better interface would untangle the default and as_from()
+        # cases.
+        return self.as_from(self.started or datetime.now())
+
+    def as_from(self, now: datetime):
+        """Return an iterator of job scheduled from now."""
+        if self.log:
+            self.log.info(f"Starting at {now} with {len(self.jobs)} jobs.")
+        self.started = now
+        self.schedule = sorted([
+            (now + timedelta(seconds=j.seconds), j) for j in sorted(self.jobs)
+        ])
+        return self
+
+    def __next__(self):
+        """Return the next scheduled job."""
+        if (not self.started) or len(self.schedule) == 0:
+            raise StopIteration
+        deadline, job = self.schedule[0]
+        # TODO: Replace the sorted-array with a better data structure.
+        self.schedule[0] = (deadline + timedelta(seconds=job.seconds), job)
+        self.schedule.sort()
+        sleep = (deadline - datetime.now()).total_seconds()
+        if self.sleep and sleep > 0:
+            if self.log:
+                self.log.debug(f"Sleeping {sleep}s until next deadline.")
+            time.sleep(sleep)
+        return (deadline, job)
+
+    def add_job(self, job: Job) -> None:
+        """Add a Job to the schedule."""
+        if self.started:
+            raise ValueError("Cannot add job to running schedule.")
+        self.jobs.append(job)
 
 
 def scheduler(
     name: str,
-    programme: List[Tuple[int, List[str]]],
+    config: List[Tuple[int, str]],
     shutdown: multiprocessing.Value,
-    request_queue: multiprocessing.Queue
+    request_queue: multiprocessing.Queue,
+    verbose: bool
 ) -> None:
     """Execute the programme by enqueuing tasks at the appropriate time."""
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
     log = logging.getLogger(name)
     log.info(f"Starting process {name}.")
 
@@ -58,12 +111,13 @@ def scheduler(
     # pending work.
     signal.signal(signal.SIGINT, ignore_signal(log))
 
-    for delay, urls in itertools.cycle(programme):
-        log.debug(f"Sleeping for {delay} before scheduling {len(urls)} tasks.")
-        time.sleep(delay)
+    scheduler = Scheduler(sleep=True, log=log)
+    for delay, url in config:
+        scheduler.add_job(Job(seconds=delay, command=url))
+
+    for ts, job in scheduler:
         if shutdown.value:
             break
-        for url in urls:
-            log.debug(f"Queuing task for {url}")
-            request_queue.put(url)
-    log.warning("Process scheduler-0 shutting down.")
+        log.debug(f"Queuing task for {job.command} at {ts}")
+        request_queue.put(job.command)
+    log.info("Process scheduler-0 shutting down.")
