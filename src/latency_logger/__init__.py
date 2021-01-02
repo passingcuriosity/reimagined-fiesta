@@ -1,12 +1,15 @@
 """Entrypoint for programme."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import multiprocessing
 import signal
 import sys
 from datetime import timedelta
-from typing import List, Optional, Tuple
+from types import FrameType
+from typing import List, Optional, TextIO, Tuple
 
 from latency_logger import scheduler, worker
 
@@ -60,27 +63,27 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_config_stream(file) -> Optional[List[Tuple[int, List[str]]]]:
+def parse_config_stream(file: TextIO) -> Optional[List[Tuple[timedelta, List[str]]]]:
     """Parse the application configuration from a file handle.
 
     The handle will be closed before the method returns.
     """
-    with file as file:
-        config = []
+    config = []
+    try:
         for ln, line in enumerate(file.readlines()):
             line = line.strip()
             try:
                 seconds, url = line.split(",", 2)
                 config.append((timedelta(seconds=int(seconds.strip())), url.strip()))
             except ValueError as exc:
-                new_exc = ValueError(
-                    f"Expected '<num>,<url>' on line {ln}: '{line}'"
-                )
+                new_exc = ValueError(f"Expected '<num>,<url>' on line {ln}: '{line}'")
                 raise new_exc from exc
-        return sorted(config)
+    finally:
+        file.close()
+    return list(sorted(config))
 
 
-def main():
+def main() -> None:
     """Parse command-line arguments, start the program."""
     args = arg_parser().parse_args()
     config = parse_config_stream(args.urls)
@@ -105,7 +108,7 @@ def main():
     # at their next opportunity.
     shutdown_flag = multiprocessing.Value('b', False)
 
-    def shutdown(signum, frame):
+    def shutdown(signum: int, frame: FrameType) -> None:
         log.error(f"Shutdown initiated in response to signal {signum}.")
         shutdown_flag.value = True
 

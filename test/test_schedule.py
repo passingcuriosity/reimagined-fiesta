@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 from itertools import islice, takewhile
+from typing import List
 
 import hypothesis.strategies as st
 import pytest
@@ -13,7 +14,7 @@ from latency_logger.scheduler import Job, Scheduler
 NOW = datetime(2021, 1, 2, 15, 18, 21)
 
 
-def test_empty_programme():
+def test_empty_programme() -> None:
     """Test that an empty configuration reports an error."""
     s = Scheduler(sleep=False)
 
@@ -26,7 +27,7 @@ def test_empty_programme():
     assert "empty schedule" in str(exc_info.value)
 
 
-def test_singleton_programme():
+def test_singleton_programme() -> None:
     """Test that a single record config a valid programme."""
     config = [(timedelta(seconds=10), "https://example.com/")]
 
@@ -40,7 +41,7 @@ def test_singleton_programme():
     assert (t10 - NOW) == timedelta(seconds=50)
 
 
-def test_canned_programme():
+def test_canned_programme() -> None:
     """Test computing the programme from a small configuration."""
     config = [
         (timedelta(seconds=4), "http://4.s.com/"),
@@ -97,7 +98,7 @@ def test_canned_programme():
     min_size=1,
     max_size=10
 ))
-def test_programme_invariants(times):
+def test_programme_invariants(times: List[int]) -> None:
     """Test schedule invariants against random configurations."""
     # We'll validate a duration long enough to see every task twice.
     d = 2 * max(times)

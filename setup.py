@@ -32,10 +32,12 @@ setup(
     ],
     extras_require={
         "dev": [
-            "hypothesis",
-            "pytest",
+            "flake8",
+            "flake8-annotations",
             "flake8-docstrings",
             "flake8-isort",
+            "hypothesis",
+            "pytest",
             "pytest-mock",
         ],
     },

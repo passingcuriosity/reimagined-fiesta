@@ -1,10 +1,14 @@
 """Tests for the worker functionality."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 from queue import Queue
+from typing import Any, Optional
 
 import pycurl
 import pytest
+from pytest_mock import MockerFixture
 
 from latency_logger import worker
 
@@ -22,20 +26,20 @@ CONFIG = worker.Config(
 class MockTerminationVariable:
     """Mock variable to signal termination after |n| inspections."""
 
-    def __init__(self, terminate_on: int):
+    def __init__(self: MockTerminationVariable, terminate_on: int) -> None:
         """Initalise mock variable to return false after n reads."""
         self.count = terminate_on
         self.reads = 0
 
     @property
-    def value(self):
+    def value(self: MockTerminationVariable) -> int:
         """Read the value of the variable."""
         self.reads += 1
         return int(not max(0, self.count - self.reads))
 
 
 @pytest.fixture
-def mock_curl(mocker):
+def mock_curl(mocker: MockerFixture) -> pycurl.Curl:
     """Mock [some] PycURL methods."""
     curl_class = mocker.patch('pycurl.Curl', autospec=True)
     curl = curl_class.return_value
@@ -44,7 +48,7 @@ def mock_curl(mocker):
 
     n = 0
 
-    def fake_info(info, **kwargs):
+    def fake_info(info: int) -> Optional[float]:
         nonlocal n
         n += 1
         if info == pycurl.RESPONSE_CODE:
@@ -69,7 +73,7 @@ def mock_curl(mocker):
 
 
 @pytest.fixture
-def mock_producer(mocker):
+def mock_producer(mocker: MockerFixture) -> Any:
     """Mock the Kafka producer classes used in worker."""
     mocker.patch('latency_logger.worker.SchemaRegistryClient', autospec=True)
     mocker.patch('latency_logger.worker.AvroSerializer', autospec=True)
@@ -84,12 +88,12 @@ def mock_producer(mocker):
 
 
 @pytest.fixture
-def mock_datetime(mocker):
+def mock_datetime(mocker: MockerFixture) -> datetime:
     """Mock datetime.datetime.now in worker."""
     start_time = datetime.now()
     fake_time = start_time
 
-    def now():
+    def now() -> datetime:
         nonlocal fake_time
         fake_time += timedelta(seconds=1)
         return fake_time
@@ -103,7 +107,7 @@ def mock_datetime(mocker):
     return mock_inst
 
 
-def test_mock_termination_variable():
+def test_mock_termination_variable() -> None:
     """Test that the mock termination variable works."""
     terminate = MockTerminationVariable(terminate_on=3)
     assert terminate.value == 0
@@ -112,7 +116,12 @@ def test_mock_termination_variable():
     assert terminate.value == 1
 
 
-def test_worker(mocker, mock_curl, mock_producer, mock_datetime):
+def test_worker(
+    mocker: MockerFixture,
+    mock_curl: pycurl.Curl,
+    mock_producer: Any,
+    mock_datetime: datetime
+) -> None:
     """Test that the worker performs requests."""
     number_to_process = 3
     urls = [f"https://localhost/{n}" for n in range(0, number_to_process + 2)]
@@ -136,7 +145,7 @@ def test_worker(mocker, mock_curl, mock_producer, mock_datetime):
 
     ts = mock_datetime.start_time.timestamp()
 
-    def expected_report(n):
+    def expected_report(n: int) -> worker.Report:
         nonlocal ts
         t = n * 7
         return (
@@ -160,11 +169,11 @@ def test_worker(mocker, mock_curl, mock_producer, mock_datetime):
     assert actual_produced_records == [expected_report(n) for n in range(0, number_to_process)]
 
 
-def test_worker_handles_failing_requests():
+def test_worker_handles_failing_requests() -> None:
     """Test that the worker correctly handles failing URLs."""
     pytest.skip("Not implemented")
 
 
-def test_worker_recovers_from_kafka_failures():
+def test_worker_recovers_from_kafka_failures() -> None:
     """Test that the worker recovers from non-fatal Kafka errors."""
     pytest.skip("Not implemented")
