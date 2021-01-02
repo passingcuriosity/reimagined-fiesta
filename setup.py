@@ -33,6 +33,7 @@ setup(
         "dev": [
             "hypothesis",
             "pytest",
+            "flake8-docstrings",
             "pytest-mock",
         ],
     },
