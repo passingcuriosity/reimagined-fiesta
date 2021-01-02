@@ -7,6 +7,7 @@ from hypothesis import given
 import hypothesis.strategies as st
 import pytest
 
+
 from latency_logger.scheduler import Job, Scheduler
 
 
@@ -18,11 +19,11 @@ def test_empty_programme():
     s = Scheduler(sleep=False)
 
     with pytest.raises(ValueError) as exc_info:
-        programme = list(islice(s.as_from(NOW), 0, 10))
+        list(islice(s.as_from(NOW), 0, 10))
     assert "empty schedule" in str(exc_info.value)
 
     with pytest.raises(ValueError) as exc_info:
-        programme = list(islice(s, 0, 10))
+        list(islice(s, 0, 10))
     assert "empty schedule" in str(exc_info.value)
 
 
