@@ -20,18 +20,28 @@ Usage
 -----
 
 ```
-latency-logger [-h] [-v] [-Q N] [-W N] FILE
+latency-logger [-h] [-v] [-Q N] [-W N]
+               [--ca-cert FILE] [--auth-cert FILE] [--auth-key FILE]
+               --bootstrap-servers URLs --schema-registry URL
+               --topic TOPIC
+               FILE
 
 Monitor URL request latency.
 
 positional arguments:
-  FILE               comma-separated file of delays (in seconds) and URLs
+  FILE                       comma-separated file of delays (in seconds) and URLs
 
 optional arguments:
-  -h, --help         show this help message and exit
-  -v, --verbose      produce more verbose output
-  -Q N, --queue N    maximum queue length
-  -W N, --workers N  number of workers
+  -h, --help                 show this help message and exit
+  -v, --verbose              produce more verbose output
+  --queue N                  maximum queue length
+  --workers N                number of workers
+  --bootstrap-servers URLs   Kafka bootstrap servers
+  --schema-registry URL      schema registry URL
+  --ca-cert FILE             TLS CA certificate file for Kafka
+  --auth-cert FILE           TLS client certificate file
+  --auth-key FILE            TLS client key file for
+  --topic TOPIC              topic name
 ```
 
 Development
