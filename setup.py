@@ -26,11 +26,14 @@ setup(
     install_requires=[
         "confluent-kafka",
         "pycurl",
+        "requests",
+        "fastavro",
     ],
     extras_require={
         "dev": [
             "hypothesis",
             "pytest",
+            "pytest-mock",
         ],
     },
 )

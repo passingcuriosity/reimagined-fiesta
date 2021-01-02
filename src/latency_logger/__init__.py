@@ -5,11 +5,11 @@ from datetime import timedelta
 import logging
 import multiprocessing
 import signal
+import sys
 from typing import List, Optional, Tuple
 
-
-from .scheduler import scheduler
-from .worker import worker
+from latency_logger import scheduler
+from latency_logger import worker
 
 
 def arg_parser() -> argparse.ArgumentParser:
@@ -28,6 +28,30 @@ def arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-W', '--workers', metavar='N', help='number of workers',
         type=int, default=3
+    )
+    parser.add_argument(
+        '-B', '--bootstrap-servers', metavar="URLs", help="Kafka bootstrap servers",
+        type=str, required=True
+    )
+    parser.add_argument(
+        '-S', '--schema-registry', metavar='URL', help='schema registry URL',
+        type=str, required=True
+    )
+    parser.add_argument(
+        '--ca-cert', metavar="FILE", help="TLS CA certificate file for Kafka",
+        type=str, default='ca.pem'
+    )
+    parser.add_argument(
+        '--auth-cert', metavar="FILE", help="TLS client certificate file",
+        type=str, default='service.cert'
+    )
+    parser.add_argument(
+        '--auth-key', metavar="FILE", help="TLS client key file for",
+        type=str, default='service.key'
+    )
+    parser.add_argument(
+        '-T', '--topic', metavar='TOPIC', help='topic name',
+        type=str, default='monitoring'
     )
     parser.add_argument(
         'urls', metavar='FILE', help='comma-separated file of delays (in seconds) and URLs',
@@ -62,10 +86,16 @@ def main():
     args = arg_parser().parse_args()
     config = parse_config_stream(args.urls)
 
-    # On MacOS Python builds is it not generally safe to fork() without
-    # immediately exec()ing. This is moderately ludicrous but it is what
-    # it is.
-    multiprocessing.set_start_method('forkserver')
+    if 'darwin' == sys.platform:
+        # On MacOS Python builds is it not generally safe to fork() without
+        # immediately exec()ing. This is moderately ludicrous but it is what
+        # it is.
+        #
+        # TODO: I haven't checked but forkserver probably means the system
+        # won't notice when children crash. This is bad.
+        multiprocessing.set_start_method('forkserver')
+    else:
+        multiprocessing.set_start_method('fork')
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -81,6 +111,8 @@ def main():
         shutdown_flag.value = True
 
     signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGCHLD, shutdown)
 
     queue = multiprocessing.Queue(args.queue)
 
@@ -88,16 +120,25 @@ def main():
     children = []
 
     scheduler_proc = multiprocessing.Process(
-        target=scheduler,
+        target=scheduler.main,
         args=("scheduler-0", config, shutdown_flag, queue, args.verbose)
     )
     children.append(scheduler_proc)
     scheduler_proc.start()
 
+    worker_config = worker.Config(
+        topic=args.topic,
+        schema_registry=args.schema_registry,
+        bootstrap_servers=args.bootstrap_servers,
+        verbose=args.verbose,
+        ca_cert=args.ca_cert,
+        auth_cert=args.auth_cert,
+        auth_key=args.auth_key,
+    )
     for num in range(0, args.workers):
         p = multiprocessing.Process(
-            target=worker,
-            args=(f"worker-{num}", shutdown_flag, queue, args.verbose)
+            target=worker.main,
+            args=(f"worker-{num}", shutdown_flag, queue, worker_config)
         )
         children.append(p)
         p.start()

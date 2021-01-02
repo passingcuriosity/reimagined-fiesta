@@ -20,7 +20,7 @@ def test_empty_programme():
 def test_singleton_programme():
     """Test that a single record config a valid programme."""
 
-    config = [(10, "https://example.com/")]
+    config = [(timedelta(seconds=10), "https://example.com/")]
 
     s = Scheduler(sleep=False)
     for d, u in config:
@@ -35,9 +35,9 @@ def test_singleton_programme():
 def test_canned_programme():
     """Test computing the programme from a small configuration."""
     config = [
-        (4, "http://4.s.com/"),
-        (2, "http://2.s.com/"),
-        (5, "http://5.s.com/"),
+        (timedelta(seconds=4), "http://4.s.com/"),
+        (timedelta(seconds=2), "http://2.s.com/"),
+        (timedelta(seconds=5), "http://5.s.com/"),
     ]
 
     s = Scheduler(sleep=False)
@@ -101,7 +101,7 @@ def test_programme_invariants(times):
     inspect_n = 0
     s = Scheduler(sleep=False)
     for ts, url in config:
-        s.add_job(Job(ts, url))
+        s.add_job(Job(timedelta(seconds=ts), url))
         inspect_n += d // ts
 
     end = NOW + timedelta(seconds=d)

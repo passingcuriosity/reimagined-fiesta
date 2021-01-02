@@ -18,63 +18,38 @@ class Job:
     command: str
 
 
-class Scheduler:
-    """Schedule a collection of recurring jobs.
+class ScheduleIterator:
+    """An iterator over jobs scheduled from a starting datetime."""
 
-    Jobs are returned in order of scheduled execution time according to the
-    defined delay and with respect to the time the scheduler was started. No
-    special efforts are taken to provide high accuracy.
-
-    The approach here is similar to that in https://pypi.org/project/schedule/
-    but without complicated builder interface.
-    """
-
-    # When True, the scheduler sleep during iteration.
     sleep: bool
-
+    started: datetime
+    schedule: List[Tuple[datetime, Job]]
     log: Optional[logging.Logger]
 
-    # List of jobs being scheduled.
-    jobs: List[Job]
-
-    # Timestamp the schedule was started.
-    started: Optional[datetime]
-
-    # Queue of tasks, sorted by datetime of next scheduled execution.
-    schedule: List[Tuple[datetime, Job]]
-
     def __init__(
-        self: Scheduler,
-        sleep: bool = True,
-        started: Optional[datetime] = None,
+        self,
+        sleep: bool,
+        started: datetime,
+        jobs: List[Job],
         log: Optional[logging.Logger] = None,
     ):
-        """Initialise an empty, stopped scheduler."""
-        self.jobs = []
-        self.schedule = []
+        """Build a schedule for the datetime and jobs."""
         self.sleep = sleep
-        self.started = started
         self.log = log
+        self.started = started
+        self.schedule = sorted([(started + j.delay, j) for j in jobs])
+        if self.log:
+            self.log.info(f"Starting at {started} with {len(jobs)} jobs.")
 
     def __iter__(self):
-        """Use the scheduler as an iterator over jobs."""
-        # TODO: A better interface would untangle the default and as_from()
-        # cases.
-        return self.as_from(self.started or datetime.now())
-
-    def as_from(self, now: datetime):
-        """Return an iterator of job scheduled from now."""
-        if self.log:
-            self.log.info(f"Starting at {now} with {len(self.jobs)} jobs.")
-        self.started = now
-        self.schedule = sorted([
-            (now + j.delay, j) for j in sorted(self.jobs)
-        ])
         return self
 
     def __next__(self):
-        """Return the next scheduled job."""
-        if (not self.started) or len(self.schedule) == 0:
+        """Return the next scheduled deadline and job.
+
+        This method will sleep if the instance was instantiated with sleep=True.
+        """
+        if (self.started is None) or len(self.schedule) == 0:
             raise StopIteration
         deadline, job = self.schedule[0]
         # TODO: Replace the sorted-array with a better data structure.
@@ -87,14 +62,44 @@ class Scheduler:
             time.sleep(sleep)
         return (deadline, job)
 
+
+class Scheduler:
+    """Schedule a collection of recurring jobs.
+
+    Jobs are returned in order of scheduled execution time according to the
+    defined delay and with respect to the time the scheduler was started. No
+    special efforts are taken to provide high accuracy.
+    """
+    sleep: bool
+
+    log: Optional[logging.Logger]
+
+    jobs: List[Job]
+
+    def __init__(
+        self: Scheduler,
+        sleep: bool = True,
+        log: Optional[logging.Logger] = None,
+    ):
+        """Initialise an empty, stopped scheduler."""
+        self.jobs = []
+        self.sleep = sleep
+        self.log = log
+
+    def __iter__(self):
+        """Iterate over the jobs scheduled from now."""
+        return self.as_from(datetime.now())
+
+    def as_from(self, now: datetime):
+        """Return an iterator of job executions scheduled from the give datetime."""
+        return ScheduleIterator(self.sleep, now, self.jobs)
+
     def add_job(self, job: Job) -> None:
         """Add a Job to the schedule."""
-        if self.started:
-            raise ValueError("Cannot add job to running schedule.")
         self.jobs.append(job)
 
 
-def scheduler(
+def main(
     name: str,
     config: List[Tuple[timedelta, str]],
     shutdown: multiprocessing.Value,
