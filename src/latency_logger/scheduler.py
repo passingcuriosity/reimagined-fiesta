@@ -8,7 +8,7 @@ import signal
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
 
 @dataclass(eq=True, frozen=True, order=True)
@@ -28,12 +28,12 @@ class ScheduleIterator:
     log: Optional[logging.Logger]
 
     def __init__(
-        self,
+        self: ScheduleIterator,
         sleep: bool,
         started: datetime,
         jobs: List[Job],
         log: Optional[logging.Logger] = None,
-    ):
+    ) -> None:
         """Build a schedule for the datetime and jobs."""
         if len(jobs) == 0:
             raise ValueError("Cannot run with empty schedule.")
@@ -44,11 +44,11 @@ class ScheduleIterator:
         if self.log:
             self.log.info(f"Starting at {started} with {len(jobs)} jobs.")
 
-    def __iter__(self):
+    def __iter__(self: ScheduleIterator) -> Iterator[Job]:
         """Return self as iterator."""
         return self
 
-    def __next__(self):
+    def __next__(self: ScheduleIterator) -> Tuple[datetime, Job]:
         """Return the next scheduled deadline and job.
 
         This method will sleep if the instance was instantiated with sleep=True.
@@ -85,21 +85,21 @@ class Scheduler:
         self: Scheduler,
         sleep: bool = True,
         log: Optional[logging.Logger] = None,
-    ):
+    ) -> Scheduler:
         """Initialise an empty, stopped scheduler."""
         self.jobs = []
         self.sleep = sleep
         self.log = log
 
-    def __iter__(self):
+    def __iter__(self: Scheduler) -> Iterator[Job]:
         """Iterate over the jobs scheduled from now."""
         return self.as_from(datetime.now())
 
-    def as_from(self, now: datetime):
+    def as_from(self: Scheduler, now: datetime) -> Iterator[Job]:
         """Return an iterator of job executions scheduled from the give datetime."""
         return ScheduleIterator(self.sleep, now, self.jobs)
 
-    def add_job(self, job: Job) -> None:
+    def add_job(self: Scheduler, job: Job) -> None:
         """Add a Job to the schedule."""
         self.jobs.append(job)
 

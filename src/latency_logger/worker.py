@@ -1,5 +1,7 @@
 """Code to execute tasks."""
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 import multiprocessing
@@ -7,6 +9,7 @@ import queue
 import signal
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable, Optional
 
 import pycurl
 from confluent_kafka import SerializingProducer
@@ -49,7 +52,7 @@ class Report:
     """
 
     @staticmethod
-    def asdict(self, ctx):
+    def asdict(self: Report, ctx: Any) -> dict:
         """Convert to a dictionary for Avro serialisation."""
         return dataclasses.asdict(self)
 
@@ -156,9 +159,10 @@ def main(
     producer.flush()
 
 
-def _report_error(log):
+def _report_error(log: logging.Logger) -> Callable[[Optional[str], Any], None]:
     """Return a callback to report errors in writing to Kafka."""
-    def error_reporter(err, msg):
+
+    def error_reporter(err: Optional[str], msg: Any) -> None:
         if err is not None:
             log.error(f"Couldn't publish message about {msg.key()}: {err}")
 
