@@ -32,7 +32,26 @@ def worker(
     while not shutdown.value:
         try:
             req = request_queue.get(timeout=1)
-            log.error(f"Process {name} processing {req}!")
+            curl = pycurl.Curl()
+            curl.setopt(pycurl.URL, req)
+            curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+            curl.setopt(pycurl.TIMEOUT, 300)
+            curl.setopt(pycurl.NOSIGNAL, 1)
+            curl.setopt(pycurl.WRITEFUNCTION, lambda b: len(b))
+            try:
+                curl.perform()
+                code = curl.getinfo(pycurl.RESPONSE_CODE)
+                ts = {
+                    'dns': curl.getinfo(pycurl.NAMELOOKUP_TIME),
+                    'tcp': curl.getinfo(pycurl.CONNECT_TIME),
+                    'ssl': curl.getinfo(pycurl.APPCONNECT_TIME),
+                    'req': curl.getinfo(pycurl.STARTTRANSFER_TIME),
+                    'fin': curl.getinfo(pycurl.TOTAL_TIME),
+                }
+                print(f"{req} ({code}): {ts}")
+            except:
+                raise
+            curl.close()
         except queue.Empty:
             log.debug("No request to process.")
     # Flush any results that haven't been committed yet.
