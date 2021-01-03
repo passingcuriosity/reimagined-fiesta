@@ -7,5 +7,4 @@
 *.tfstate.backup
 *.tfvars
 /.hypothesis/
-/*.sh
 /venv/

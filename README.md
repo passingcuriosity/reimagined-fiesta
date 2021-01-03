@@ -54,7 +54,26 @@ $ . venv/bin/activate
 (venv) $ pip install -e .[dev]
 (venv) $ flake8 *.py src/ test/
 (venv) $ pytest -vv
-(venv) $ latency-logger --verbose demo.csv
+(venv) $ latency-logger --help
+```
+
+Running the application
+-----------------------
+
+You can create the infrastructure services to run the application using the
+Terraform configuration in `terraform/`. You will need to assign values to the
+variables in a `terraform.tfvars` file or in appropriately named environment
+variables.
+
+Once the services are running, you can start the application using the `run.sh`
+shell script. The script extracts parameters for the application from the
+Terraform output values.
+
+```
+(venv) $ cd terraform/
+(venv) $ terraform apply
+(venv) $ cd -
+(venv) $ ./run.sh demo.csv
 ```
 
 Architecture
@@ -105,8 +124,6 @@ Kafka client to process any pending events (e.g. logging Kafka errors to the
 worker process output), fetch a pending task from the queue, run the request,
 and write the results to Kafka.
 
-The exception handling is currently MIA.
-
 ## Caveats
 
 This whole assembly more or less assumes deployment on a POSIX-ish system doing
@@ -117,7 +134,3 @@ problematic. On platforms where it uses `fork`, the main process should notice
 when children die and terminate the system saftely. Unless `forkserver` is
 doing something clever under the covers (🤞) and forwarding `SIGCHLD` then we're
 probably out of luck in that regard.
-
-Deployment
-----------
-

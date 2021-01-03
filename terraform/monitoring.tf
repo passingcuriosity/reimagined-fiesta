@@ -1,3 +1,4 @@
+
 resource "aiven_kafka_topic" "monitoring" {
   project      = aiven_project.test.project
   service_name = aiven_kafka.kafka.service_name

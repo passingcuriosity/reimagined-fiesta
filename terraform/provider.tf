@@ -27,3 +27,11 @@ provider "aiven" {
 resource "aiven_project" "test" {
   project = var.aiven_project
 }
+
+output "schema_registry_uri" {
+  value = "https://${data.aiven_service_user.kafka_admin.username}:${data.aiven_service_user.kafka_admin.password}@${data.aiven_service_component.schema_registry.host}:${data.aiven_service_component.schema_registry.port}"
+}
+
+output "bootstrap_servers" {
+  value = aiven_kafka.kafka.service_uri
+}
